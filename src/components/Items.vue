@@ -1,10 +1,17 @@
 <template>
     <div>
         <ul>
-             <li v-for= '(item , index) in allTodos' :key='index'>
+             <li v-for= '(item , index) in allTodos' :key='index' @dblclick='inputChange(index,true)' >
                 <span class="point" :class='{completed:item.completed}' @click="changeCompleted(index)"></span>
-                <b :class={completed:item.completed}>{{item.text}}</b>
+                <b :class={completed:item.completed} >{{item.text}}</b>
                 <button @click='deleteTodo(item.id)'>X</button>
+                <input  type="text"  
+                        :value=item.text  
+                        :class='{showIpt:item.isShowIpt}'
+                        v-focus
+                        @keyup="inputTodo(index,$event)"                  
+                        @blur='inputChange(index,false)'
+                >
             </li> 
         </ul>
     </div>   
@@ -16,7 +23,10 @@ export default {
   props: {
     allTodos: Array,
     deleteTodo:Function,
-    changeCompleted:Function
+    changeCompleted:Function,
+    inputChange:Function,
+    inputTodo:Function,
+    // inputNone:Function
   },
   methods:{
     
@@ -38,6 +48,7 @@ export default {
         padding: 0 10px;
         line-height:40px;
         background:#fff;
+        position: relative;
     }
     span{
         float: left;
@@ -68,6 +79,20 @@ export default {
         outline: none;
     }
     li:hover button{
+        display: block;
+    }
+    li input {
+        position: absolute;
+        width:400px;
+        height:40px;
+        left:50px;
+        top:0;
+        z-index: 9;
+        background:#fff;
+        outline: none;
+        display:none;
+    }
+    li input.showIpt{
         display: block;
     }
 </style>

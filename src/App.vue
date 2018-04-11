@@ -1,21 +1,46 @@
 <template>
   <div id="app">
       <h1>todos</h1>
+      <!-- 查找todo -->
+      <div class="serch">
+         <input type="text" name="" id="" @keyup='serchTodo' @blur="blurChange" placeholder="搜索todo :">
+         <span @blur="blurChange" >X</span>
+      </div>
+      <!-- 输入todo -->
       <div class="ipt">
           <span class="point" :class='{show:isShow,completed:isCompleted}' @click='allChangeCompleted'></span>
-          <input type="text" placeholder="What needs to be done?" @keyup.enter='addTodo'>
-      </div>
+          <input type="text" placeholder="What needs to be done? (Click Hear)" @keyup.enter='addTodo'>
+      </div>  
+      <!-- todo列表 -->
       <Items  class="Items" 
               :allTodos='allTodos' 
               :deleteTodo='deleteTodo' 
               :changeCompleted='changeCompleted'
+              :inputChange='inputChange'
+              :inputTodo='inputTodo'
+              :inputNone='inputNone'
       >
       </Items>
+      <!-- 状态 -->
       <div class="status">
           <span class="num">{{num}} items</span>
-          <span class="all" :class="[tag==='all'?'isActive':'']" @click='toggleStatus("all")'>all</span>
-          <span class="active" :class="[tag==='active'?'isActive':'']" @click='toggleStatus("active")'>active</span>
-          <span class="completed" :class="[tag==='completed' ? 'isActive' : '']" @click='toggleStatus("completed")'>completed</span>
+          <span class="all" 
+                :class="[(tag==='all'||tag==='clearCompleted')?'isActive':'']" 
+                @click='toggleStatus("all")'>
+                all</span>
+          <span class="active" 
+                :class="[tag==='active'?'isActive':'']" 
+                @click='toggleStatus("active")'>
+                active</span>
+          <span class="completed" 
+                :class="[tag==='completed' ? 'isActive' : '']"
+                @click='toggleStatus("completed")'>
+                completed</span>
+          <span class="clearCompleted"
+                :class="{isShowClearCompleted:isShowClearCompleted}"
+                @click='clearCompletedFunction'>
+                clearCompleted
+         </span> 
       </div>
       <p class="deck"></p>
       <p class="deck"></p>
@@ -23,27 +48,32 @@
 </template>
 
 <script>
-
 import Items from './components/Items' 
 
 var filter={
-   all:
-      function(todos){
+    all: function(todos){
           return todos;
-      }
-   ,
-   active:
-     function(todos){
-          return todos.filter(val=>val.completed==false);
-     }
-   ,
-   completed:
-     function(todos){
-       return todos.filter(val=>val.completed==true);
-     }
-   
+       },
+    active:function(todos){
+                return todos.filter(val=>val.completed===false);
+          },
+    completed:function(todos){
+                return todos.filter(val=>val.completed===true);
+          },
+    clearCompleted:function(todos){
+                return todos.filter(val=>val.completed===false);
+          },
+    serch: function(todos,serchVal){
+                var arr=todos.filter(val=>{
+                    return new RegExp(serchVal,'i').test(val.text)
+                });
+                if(arr.length==0){
+                    return [{id:0,text:'没有这个todo',completed:false}];
+                }else{
+                    return arr;
+                }
+    }
 }
-
 export default {
   name: 'app',
   components: {
@@ -54,33 +84,36 @@ export default {
         isShow:true,
         isCompleted:true,
         todos:[
-          {id:0,text:'000',completed:true},
-          {id:1,text:'111',completed:true},
-          {id:2,text:'222',completed:true}
+          {id:1,text:'000',completed:true,isShowIpt:false},
+          {id:2,text:'111',completed:true,isShowIpt:false},
+          {id:3,text:'222',completed:true,isShowIpt:false}
         ],
-        total:3,
+        total:4,
         num:3,
-        tag:'all'
+        tag:'all',
+        serchVal:''
     }
   },
   computed:{
         allTodos:function(){
-          console.log(filter[this.tag])
-          return filter[this.tag](this.todos);
+          return filter[this.tag](this.todos,this.serchVal);
+        },
+        isShowClearCompleted:function(){
+          return this.todos.some(val=>val.completed===true)
         }
   },
   watch:{
-    todos: {
+    allTodos: {
       // 深度watch
       handler:function(val){
-          var isFlag=val.some(val => val.completed==false);
+          var isFlag=val.some(val => val.completed===false);
           this.isCompleted=!isFlag;
           if(val.length==0){
             this.isShow=false;
           }else{
             this.isShow=true;
           };
-          this.num=val.filter(val => val.completed==false).length;
+          this.num=val.filter(val => val.completed===false).length;
       },
       deep:true
     }
@@ -97,7 +130,7 @@ export default {
     },
     // 添加todo
     addTodo(e){
-        this.todos.push({id:this.total++,text:e.target.value,completed:false});
+        this.todos.push({id:this.total++,text:e.target.value,completed:false,isShowIpt:false});
         e.target.value='';
     },
     // 删除todo
@@ -107,7 +140,33 @@ export default {
     // 切换状态
     toggleStatus(status){
         this.tag=status;
-        console.log(filter[this.tag])
+    },
+    // 搜索todo
+    serchTodo(e){
+        this.serchVal=e.target.value;
+        this.tag='serch';
+    },
+    blurChange(e){
+        this.tag='all';
+        e.target.value=''
+    },
+    // 改变todo
+    inputChange(index,flag){
+      this.todos[index].isShowIpt= flag;
+    },
+    inputTodo(index,e){
+      if(e.keyCode==13){
+        this.todos[index].isShowIpt=false;
+      }
+      this.todos[index].text=e.target.value;
+    },
+    inputNone(index){
+      // this.todos[index].isShowIpt=false;
+    },
+    // 清楚clearCompleted
+    clearCompletedFunction(){
+      this.todos=this.todos.filter(val=>val.completed===false);
+      this.toggleStatus("clearCompleted")
     }
   }
 }
@@ -133,14 +192,39 @@ export default {
 h1{
   color:#ecdddd;
   font-size:70px;
-  margin:30px 0 30px;
+  margin:30px 0 10px;
+}
+div.serch{
+  width:500px;
+  height:40px;
+  margin: 0 auto 20px;
+  text-align: left;
+  position: relative;
+}
+div.serch input{
+  width:450px;
+  height:40px;
+  padding: 5px 10px;
+  outline:none;
+}
+div.serch span {
+  border:1px solid #d2d2d2;
+  border-radius: 50%;
+  width:40px;
+  height:40px;
+  float: right;
+  text-align: center;
+  line-height:40px;
+  cursor: pointer;
+}
+div.serch span:hover{
+  border-color: #aaa;
 }
 div.ipt{
   width:500px;
   height:60px;
   margin:0 auto;
   border:1px solid #d2d2d2;
-  /* box-shadow: 10px 10px 5px #888888; */
   background:#fff;
 }
 div.ipt .point{
@@ -164,13 +248,13 @@ div.ipt input{
   height:58px;
   border:0;
   outline:none;
-  padding: 10px 30px;
+  padding: 10px 10px;
   float: left;
   font-size:20px;
 }
 .Items{
   width:500px;
-  max-height: 450px;
+  max-height: 400px;
   overflow-y: scroll;
   margin:0 auto;
 }
@@ -217,6 +301,13 @@ div.ipt input{
 .status span:first-child{
   margin-right: 90px;
   cursor: default;
+}
+.status span:last-child{
+  float:right;
+  display:none;
+}
+.status span.isShowClearCompleted{
+  display: block;
 }
 p.deck{
   width:480px;
